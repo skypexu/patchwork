@@ -215,10 +215,10 @@ index 173e07eb..43627ec0 100644
      for(auto threadTask : m_threadTaskHandles)
 diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
-index 00000000..504ff452
+index 00000000..9a182356
 --- /dev/null
 +++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,107 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -279,8 +279,6 @@ index 00000000..504ff452
 +				rc = pthread_create(&td_, &attr, invoke, fp.get());
 +				pthread_attr_destroy(&attr);
 +				if (rc) {
-+					// have to use this non-portable function because
-+					// aws lib disabled exception
 +					throw_system_error(rc, "pthread_create");
 +				} else {
 +					fp.release();
