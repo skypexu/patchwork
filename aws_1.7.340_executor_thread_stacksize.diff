@@ -52,10 +52,10 @@ index 88048a30..76bf6862 100644
                   */
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 new file mode 100644
-index 00000000..4810ab62
+index 00000000..b51ce66a
 --- /dev/null
 +++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,109 @@
 +#pragma once
 +
 +#include <exception>
@@ -64,10 +64,7 @@ index 00000000..4810ab62
 +#include <system_error>
 +#include <utility>
 +
-+#include <errno.h>
 +#include <pthread.h>
-+#include <stdio.h>
-+#include <stdlib.h>
 +
 +namespace Aws
 +{
@@ -107,12 +104,12 @@ index 00000000..4810ab62
 +						delete fp;
 +						// have to use this non-portable function because
 +						// aws lib disabled exception
-+						std::__throw_system_error(rc);
++						throw_system_error(rc, "pthread_create");
 +					}
 +				}
 +				StkSzThread( const StkSzThread& ) = delete;
 +
-+				~StkSzThread()                                                                   
++				~StkSzThread()
 +				{                                                                           
 +					if (joinable())
 +						std::terminate();
@@ -127,11 +124,11 @@ index 00000000..4810ab62
 +					if (td_) {
 +						int rc = pthread_detach(td_);
 +						if (rc)
-+							std::__throw_system_error(rc);
++							throw_system_error(rc, "pthread_detach");
 +						td_ = 0;
 +						detach_ = false;
 +					} else {
-+						std::__throw_invalid_argument("detach nil thread");
++						throw_invalid_argument("detach nil thread");
 +					}
 +				}
 +
@@ -139,27 +136,24 @@ index 00000000..4810ab62
 +					if (td_) {
 +						int rc = pthread_join(td_, nullptr);
 +						if (rc)
-+							std::__throw_system_error(rc);
++							throw_system_error(rc, "pthread_join");
 +						td_ = 0;
 +						detach_ = false;
 +					} else {
-+						std::__throw_invalid_argument("join nil thread");
++						throw_invalid_argument("join nil thread");
 +					}
 +				}
 +
-+				id get_id() const noexcept                                                     
++				id get_id() const noexcept
 +				{
 +					return td_;
-+				}  
-+
-+			private:
-+				static void *invoke(void *p) {
-+					std::unique_ptr<FuncObj> fp(static_cast<FuncObj *>(p));
-+					(*fp)();
-+					return nullptr;
 +				}
 +
-+				pthread_t td_;	
++			private:
++				static void *invoke(void *p);
++				static void throw_system_error(int rc, const char *msg);
++				static void throw_invalid_argument(const char *msg);
++				pthread_t td_;
 +				bool detach_;
 +			};
 +
@@ -249,6 +243,47 @@ index 173e07eb..43627ec0 100644
  PooledThreadExecutor::~PooledThreadExecutor()
  {
      for(auto threadTask : m_threadTaskHandles)
+diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
+new file mode 100644
+index 00000000..8c2e8604
+--- /dev/null
++++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
+@@ -0,0 +1,35 @@
++#include <aws/core/utils/threading/StkSzThread.h>
++#include <errno.h>
++#include <exception>
++#include <memory>
++#include <stdio.h>
++
++namespace Aws
++{
++	namespace Utils
++	{
++		namespace Threading
++		{
++				void *StkSzThread::invoke(void *p)
++				{
++					std::unique_ptr<FuncObj> fp(static_cast<FuncObj *>(p));
++					(*fp)();
++					return nullptr;
++				}
++				void StkSzThread::throw_system_error(int rc, const char *msg)
++				{
++					// aws lib disabled c++ exception, otherwise we'd
++					// throw exceptions.
++					errno = rc;
++					perror(msg);
++					std::terminate();
++				}
++				void StkSzThread::throw_invalid_argument(const char *msg)
++				{
++					errno = EINVAL;
++					perror(msg);
++					std::terminate();
++				}
++		}
++	}
++}
 diff --git a/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp b/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
 index debe24b7..64f5a4a1 100644
 --- a/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
