@@ -215,7 +215,7 @@ index 173e07eb..43627ec0 100644
      for(auto threadTask : m_threadTaskHandles)
 diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
-index 00000000..19c44463
+index 00000000..504ff452
 --- /dev/null
 +++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 @@ -0,0 +1,109 @@
@@ -236,9 +236,9 @@ index 00000000..19c44463
 + */
 +
 +#include <aws/core/utils/threading/StkSzThread.h>
++#include <memory>
 +#include <errno.h>
 +#include <exception>
-+#include <memory>
 +#include <stdio.h>
 +#include <pthread.h>
 +
