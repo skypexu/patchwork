@@ -1,5 +1,5 @@
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
-index 88048a30..76bf6862 100644
+index 88048a30..c5f49881 100644
 --- a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
 +++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
 @@ -20,6 +20,7 @@
@@ -41,15 +41,14 @@ index 88048a30..76bf6862 100644
                  ~PooledThreadExecutor();
  
                  /**
-@@ -113,7 +117,7 @@ namespace Aws
+@@ -113,6 +117,7 @@ namespace Aws
                  Aws::Vector<ThreadTask*> m_threadTaskHandles;
                  size_t m_poolSize;
                  OverflowPolicy m_overflowPolicy;
--
 +                size_t m_stackSize;
+ 
                  /**
                   * Once you call this, you are responsible for freeing the memory pointed to by task.
-                  */
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 new file mode 100644
 index 00000000..6ab03709
@@ -215,10 +214,10 @@ index 173e07eb..43627ec0 100644
      for(auto threadTask : m_threadTaskHandles)
 diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
-index 00000000..9a182356
+index 00000000..0fcc3231
 --- /dev/null
 +++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,108 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -273,7 +272,8 @@ index 00000000..9a182356
 +				int rc;
 +
 +				rc = pthread_attr_init(&attr);
-+				if (rc) throw_system_error(rc, "pthread_attr_init");
++				if (rc)
++					throw_system_error(rc, "pthread_attr_init");
 +				if (stackSize && (rc = pthread_attr_setstacksize(&attr, stackSize)))
 +					throw_system_error(rc, "pthread_attr_setstacksize");
 +				rc = pthread_create(&td_, &attr, invoke, fp.get());
