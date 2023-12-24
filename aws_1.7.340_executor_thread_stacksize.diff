@@ -1,3 +1,64 @@
+diff --git a/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp b/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
+new file mode 100644
+index 00000000..421e3fd4
+--- /dev/null
++++ b/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
+@@ -0,0 +1,55 @@
++/*
++ *  Copyright (c) 2023 NetEase Inc.
++ *
++ *  Licensed under the Apache License, Version 2.0 (the "License");
++ *  you may not use this file except in compliance with the License.
++ *  You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ *  Unless required by applicable law or agreed to in writing, software
++ *  distributed under the License is distributed on an "AS IS" BASIS,
++ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ *  See the License for the specific language governing permissions and
++ *  limitations under the License.
++ */
++
++#include <aws/external/gtest.h>
++#include <aws/core/utils/threading/Executor.h>
++#include <aws/core/utils/threading/Semaphore.h>
++#include <atomic>
++#include <chrono>
++#include <unistd.h>
++
++using namespace Aws::Utils::Threading;
++
++TEST(PooledThreadExecutor, WaitAllTasksToBeDrained)
++{
++    std::atomic<int> i(1);
++    {
++        PooledThreadExecutor exec(10);
++        static Semaphore ev(0, 2);
++        auto first = [&] { ev.WaitOne(); i++; };
++        auto second = [&] { ev.WaitOne(); i++; };
++        exec.Submit(first);
++        exec.Submit(second);
++        ev.ReleaseAll();
++	// have to wait for a while because PoolThreadExecutor does not
++	// have a task-draining method :(
++    	sleep(1);
++    }
++    i = i * 10;
++    ASSERT_EQ(30, i.load());
++}
++
++TEST(PooledThreadExecutor, WaitTaskToComplete)
++{
++    using namespace std::chrono;
++    std::atomic<int> i(1);
++    static Semaphore ev(0, 1);
++    PooledThreadExecutor exec(10);
++    exec.Submit([&] { i++; ev.Release(); });
++    ev.WaitOne();
++    i = i * 10;
++    ASSERT_EQ(20, i.load());
++}
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
 index 88048a30..c5f49881 100644
 --- a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
@@ -214,10 +275,10 @@ index 173e07eb..43627ec0 100644
      for(auto threadTask : m_threadTaskHandles)
 diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
-index 00000000..0fcc3231
+index 00000000..6c4812ec
 --- /dev/null
 +++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,109 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -251,6 +312,7 @@ index 00000000..0fcc3231
 +		perror(msg);
 +		std::terminate();
 +	}
++
 +	static void throw_invalid_argument(const char *msg)
 +	{
 +		errno = EINVAL;
