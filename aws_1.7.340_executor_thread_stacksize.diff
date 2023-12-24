@@ -112,10 +112,10 @@ index 88048a30..c5f49881 100644
                   * Once you call this, you are responsible for freeing the memory pointed to by task.
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 new file mode 100644
-index 00000000..d7295b99
+index 00000000..c73387f6
 --- /dev/null
 +++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,80 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -153,19 +153,17 @@ index 00000000..d7295b99
 +			public:
 +				using FuncObj = std::function<void ()>;
 +				typedef pthread_t id;
++				const id INVALID_ID = 0;
 +
 +				StkSzThread() noexcept
 +				{
 +					td_ = INVALID_ID;
-+					detach_ = false;
 +				}
 +
 +				StkSzThread(StkSzThread&& other) noexcept
 +				{
 +					td_ = other.td_;
 +					other.td_ = INVALID_ID;
-+					detach_ = other.detach_;
-+					other.detach_ = false;
 +				}
 +
 +				explicit StkSzThread(FuncObj&& func, size_t stackSize);
@@ -185,10 +183,8 @@ index 00000000..d7295b99
 +				}
 +
 +			private:
-+				const id INVALID_ID = 0;
 +				static void *invoke(void *p);
 +				pthread_t td_;
-+				bool detach_;
 +			};
 +
 +			namespace stksz_thread {
@@ -280,10 +276,10 @@ index 173e07eb..43627ec0 100644
      for(auto threadTask : m_threadTaskHandles)
 diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
-index 00000000..6c4812ec
+index 00000000..92f20dc5
 --- /dev/null
 +++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,107 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -365,7 +361,6 @@ index 00000000..6c4812ec
 +					if (rc)
 +						throw_system_error(rc, "pthread_detach");
 +					td_ = INVALID_ID;
-+					detach_ = false;
 +				} else {
 +					throw_invalid_argument("detach nil thread");
 +				}
@@ -378,7 +373,6 @@ index 00000000..6c4812ec
 +					if (rc)
 +						throw_system_error(rc, "pthread_join");
 +					td_ = INVALID_ID;
-+					detach_ = false;
 +				} else {
 +					throw_invalid_argument("join nil thread");
 +				}
