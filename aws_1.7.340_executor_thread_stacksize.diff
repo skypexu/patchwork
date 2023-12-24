@@ -112,10 +112,10 @@ index 88048a30..c5f49881 100644
                   * Once you call this, you are responsible for freeing the memory pointed to by task.
 diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 new file mode 100644
-index 00000000..6ab03709
+index 00000000..d7295b99
 --- /dev/null
 +++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,84 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
 + *
@@ -154,14 +154,16 @@ index 00000000..6ab03709
 +				using FuncObj = std::function<void ()>;
 +				typedef pthread_t id;
 +
-+				StkSzThread() noexcept {
++				StkSzThread() noexcept
++				{
 +					td_ = INVALID_ID;
 +					detach_ = false;
 +				}
 +
-+				StkSzThread(StkSzThread&& other) noexcept {
++				StkSzThread(StkSzThread&& other) noexcept
++				{
 +					td_ = other.td_;
-+					other.td_ = 0;
++					other.td_ = INVALID_ID;
 +					detach_ = other.detach_;
 +					other.detach_ = false;
 +				}
@@ -170,13 +172,15 @@ index 00000000..6ab03709
 +				StkSzThread(const StkSzThread&) = delete;
 +				~StkSzThread();
 +
-+				bool joinable() const noexcept {
++				bool joinable() const noexcept
++				{
 +					return td_ != INVALID_ID;
 +				}
 +
 +				void detach();
 +				void join();
-+				id get_id() const noexcept {
++				id get_id() const noexcept
++				{
 +					return td_;
 +				}
 +
@@ -188,7 +192,8 @@ index 00000000..6ab03709
 +			};
 +
 +			namespace stksz_thread {
-+				inline StkSzThread::id get_id() {
++				inline StkSzThread::id get_id()
++				{
 +					return pthread_self();
 +				}
 +			}
