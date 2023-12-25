@@ -1,8 +1,8 @@
-diff --git a/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp b/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
+diff --git aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
 new file mode 100644
-index 00000000..421e3fd4
+index 00000000..7b86758f
 --- /dev/null
-+++ b/aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
++++ aws-cpp-sdk-core-tests/utils/threading/PooledThreadExecutor.cpp
 @@ -0,0 +1,55 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
@@ -41,7 +41,7 @@ index 00000000..421e3fd4
 +        exec.Submit(second);
 +        ev.ReleaseAll();
 +	// have to wait for a while because PoolThreadExecutor does not
-+	// have a task-draining method :(
++	// have a method to drain tasks. :(
 +    	sleep(1);
 +    }
 +    i = i * 10;
@@ -59,10 +59,10 @@ index 00000000..421e3fd4
 +    i = i * 10;
 +    ASSERT_EQ(20, i.load());
 +}
-diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
+diff --git aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
 index 88048a30..c5f49881 100644
---- a/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
-+++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
+--- aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
++++ aws-cpp-sdk-core/include/aws/core/utils/threading/Executor.h
 @@ -20,6 +20,7 @@
  #include <aws/core/utils/memory/stl/AWSVector.h>
  #include <aws/core/utils/memory/stl/AWSMap.h>
@@ -110,11 +110,11 @@ index 88048a30..c5f49881 100644
  
                  /**
                   * Once you call this, you are responsible for freeing the memory pointed to by task.
-diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
+diff --git aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 new file mode 100644
 index 00000000..c73387f6
 --- /dev/null
-+++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
++++ aws-cpp-sdk-core/include/aws/core/utils/threading/StkSzThread.h
 @@ -0,0 +1,80 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
@@ -196,10 +196,10 @@ index 00000000..c73387f6
 +		}
 +	}
 +}
-diff --git a/aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h b/aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
+diff --git aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
 index b045069c..f54cc74b 100644
---- a/aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
-+++ b/aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
+--- aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
++++ aws-cpp-sdk-core/include/aws/core/utils/threading/ThreadTask.h
 @@ -16,6 +16,7 @@
  #pragma once
  
@@ -217,10 +217,10 @@ index b045069c..f54cc74b 100644
              };
          }
      }
-diff --git a/aws-cpp-sdk-core/source/utils/threading/Executor.cpp b/aws-cpp-sdk-core/source/utils/threading/Executor.cpp
+diff --git aws-cpp-sdk-core/source/utils/threading/Executor.cpp aws-cpp-sdk-core/source/utils/threading/Executor.cpp
 index 173e07eb..43627ec0 100644
---- a/aws-cpp-sdk-core/source/utils/threading/Executor.cpp
-+++ b/aws-cpp-sdk-core/source/utils/threading/Executor.cpp
+--- aws-cpp-sdk-core/source/utils/threading/Executor.cpp
++++ aws-cpp-sdk-core/source/utils/threading/Executor.cpp
 @@ -26,7 +26,7 @@ bool DefaultExecutor::SubmitToThread(std::function<void()>&&  fx)
  {
      auto main = [fx, this] { 
@@ -274,11 +274,11 @@ index 173e07eb..43627ec0 100644
  PooledThreadExecutor::~PooledThreadExecutor()
  {
      for(auto threadTask : m_threadTaskHandles)
-diff --git a/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
+diff --git aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 new file mode 100644
 index 00000000..92f20dc5
 --- /dev/null
-+++ b/aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
++++ aws-cpp-sdk-core/source/utils/threading/StkSzThread.cpp
 @@ -0,0 +1,107 @@
 +/*
 + *  Copyright (c) 2023 NetEase Inc.
@@ -387,10 +387,10 @@ index 00000000..92f20dc5
 +		}
 +	}
 +}
-diff --git a/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp b/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
+diff --git aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
 index debe24b7..64f5a4a1 100644
---- a/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
-+++ b/aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
+--- aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
++++ aws-cpp-sdk-core/source/utils/threading/ThreadTask.cpp
 @@ -19,7 +19,8 @@
  using namespace Aws::Utils;
  using namespace Aws::Utils::Threading;
